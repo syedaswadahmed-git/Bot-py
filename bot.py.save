@@ -1,0 +1,126 @@
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+import random
+
+TOKEN = "8595752857:AAE-snKxRbSau0OP9rw22p_Jkzus5qu0NC8"
+
+user_state = {}
+
+# ---------- Helpers ----------
+
+def start_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("💣 MINES", callback_data="game_mines")]
+    ])
+
+def mines_count_menu():
+    buttons = []
+    row = []
+    for i in range(1, 25):
+        row.append(InlineKeyboardButton(str(i), callback_data=f"mines_{i}"))
+        if len(row) == 6:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+    buttons.append([InlineKeyboardButton("⬅ BACK", callback_data="back_start")])
+    return InlineKeyboardMarkup(buttons)
+
+def open_boxes_menu():
+    buttons = []
+    row = []
+    for i in range(1, 11):
+        row.append(InlineKeyboardButton(str(i), callback_data=f"open_{i}"))
+        if len(row) == 5:
+            buttons.append(row)
+            row = []
+    buttons.append([InlineKeyboardButton("⬅ BACK", callback_data="back_mines")])
+    return InlineKeyboardMarkup(buttons)
+
+def board_markup(open_cells):
+    kb = []
+    for i in range(0, 25, 5):
+        row = []
+        for j in range(5):
+            idx = i + j
+            if idx in open_cells:
+                row.append(InlineKeyboardButton("✅", callback_data="x"))
+            else:
+                row.append(InlineKeyboardButton("⬜", callback_data="x"))
+        kb.append(row)
+    kb.append([InlineKeyboardButton("🔄 NEW PREDICTION", callback_data="restart")])
+    return InlineKeyboardMarkup(kb)
+
+# ---------- Commands ----------
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_state.clear()
+    await update.message.reply_text(
+        "🤖 Stake Mines Predictor\n\nChoose Game 👇",
+        reply_markup=start_menu()
+    )
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    uid = q.from_user.id
+
+    if q.data == "game_mines":
+        await q.edit_message_text(
+            "💣 Select Mines Count",
+            reply_markup=mines_count_menu()
+        )
+
+    elif q.data.startswith("mines_"):
+        mines = int(q.data.split("_")[1])
+        user_state[uid] = {"mines": mines}
+        await q.edit_message_text(
+            f"💣 Mines Selected: {mines}\n\nSelect boxes to open",
+            reply_markup=open_boxes_menu()
+        )
+
+    elif q.data.startswith("open_"):
+        opens = int(q.data.split("_")[1])
+        mines = user_state.get(uid, {}).get("mines", 3)
+
+        cells = list(range(25))
+        mine_cells = random.sample(cells, mines)
+        safe_cells = [c for c in cells if c not in mine_cells]
+
+        if opens > len(safe_cells):
+            opens = len(safe_cells)
+
+        predicted = random.sample(safe_cells, opens)
+
+        await q.edit_message_text(
+            f"💣 MINES PREDICTION\n\n"
+            f"Mines: {mines}\n"
+            f"Opened: {opens}\n\n"
+            f"✅ = Safe Prediction",
+            reply_markup=board_markup(predicted)
+        )
+
+    elif q.data == "restart":
+        await q.edit_message_text(
+            "🤖 Stake Mines Predictor\n\nChoose Game 👇",
+            reply_markup=start_menu()
+        )
+
+    elif q.data == "back_start":
+        await q.edit_message_text(
+            "🤖 Stake Mines Predictor\n\nChoose Game 👇",
+            reply_markup=start_menu()
+        )
+
+    elif q.data == "back_mines":
+        await q.edit_message_text(
+            "💣 Select Mines Count",
+            reply_markup=mines_count_menu()
+        )
+
+# ---------- App ----------
+
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(button))
+app.run_polling()
