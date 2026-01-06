@@ -62,28 +62,22 @@ async def check_auth(update: Update):
     data = load_data()
     uid = str(update.effective_user.id)
     
-    # 1. Check Ban
     if uid in data.get("banned", []):
         await update.message.reply_text("🚫 **ACCESS DENIED**\nAdmin ne tumhe BAN kar diya hai.")
         return False
         
-    # 2. Check License Existence
     if uid not in data["users"]:
-        # Agar user ke paas license nahi hai, toh use lock message bhejo
-        # Lekin agar ye /start command hai, toh hum wahan alag handle karenge
         return False
         
     user_info = data["users"][uid]
     
-    # CRASH FIX: Check if data is dict or string (Old Data Support)
+    # SAFETY CHECK: Old data format crash fix
     if isinstance(user_info, str):
-        # Old format detected, force user to re-login or clean db
         del data["users"][uid]
         save_data(data)
         return False
 
     expiry = datetime.fromisoformat(user_info["expiry"])
-    
     if datetime.now() > expiry:
         await update.message.reply_text("⚠️ **License Expired!**\nRenew: @Merejigarketukde")
         return False
@@ -91,11 +85,7 @@ async def check_auth(update: Update):
     return True
 
 async def unauthorized_alert(update: Update):
-    await update.message.reply_text(
-        "⛔ **TERI AUKAAT NAHI HAI!** ⛔\n\n"
-        "Ye command sirf **Baap (@Merejigarketukde)** chala sakta hai.",
-        parse_mode="Markdown"
-    )
+    await update.message.reply_text("⛔ **Admin Only Command!**", parse_mode="Markdown")
 
 # --- ANIMATIONS ---
 async def show_verified_animation(update, seed_type, user_input):
@@ -114,7 +104,7 @@ async def play_hacker_animation(update):
     await asyncio.sleep(0.5)
     await msg.delete()
 
-# --- GAME LOGIC ---
+# --- GAME LOGIC (UNCHANGED) ---
 async def get_limbo_res(update, context):
     await play_hacker_animation(update)
     target = random.choices([1.5, 2.0, 3.0, 10.0], [40, 30, 20, 10])[0]
@@ -154,18 +144,15 @@ async def get_mines_res(update, context):
     context.user_data["last_func"] = "mines"
     await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
-# --- HANDLERS (GAME FLOW) ---
+# --- HANDLERS (FLOW) ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Agar Authorized hai to seedha Games dikhao
     if await check_auth(update):
         await update.message.reply_text("👑 **Welcome Boss! Ready to earn?**", reply_markup=main_menu(), parse_mode="Markdown")
     else:
-        # Agar Authorized nahi hai to Lock Message
         await update.message.reply_text("🔒 **LOCKED**\n\nAccess lene ke liye Key kharidein.\nAdmin: @Merejigarketukde\n\nUse: `/activate KEY`", parse_mode="Markdown")
 
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_auth(update):
-        # Agar koi bina license ke button dabaye ya baat kare
         await update.message.reply_text("🔒 **Access Denied**\nKey Activate karein: `/activate KEY`", parse_mode="Markdown")
         return
 
@@ -296,32 +283,24 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "name": name,
             "joined": datetime.now().isoformat()
         }
-        if "history" not in data: data["history"] = []
-        if uid not in [h["uid"] for h in data["history"]]:
-            data["history"].append({"uid": uid, "date": datetime.now().isoformat()})
-            
         del data["keys"][key]
         save_data(data)
-        # Activation ke baad seedha Menu dikhao
         await update.message.reply_text(f"✅ **Activated ({mins}m)!**\nWelcome {name}", reply_markup=main_menu())
     else:
         await update.message.reply_text("❌ Invalid Key")
 
 async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # User apna session khud end kar sake
     data = load_data()
     uid = str(update.effective_user.id)
     if uid in data["users"]:
         del data["users"][uid]
         save_data(data)
-        await update.message.reply_text("🛑 **Session Ended.**\nApka license device se hata diya gaya hai.", reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text("🛑 **Session Ended.**", reply_markup=ReplyKeyboardRemove())
     else:
         await update.message.reply_text("Aapke paas koi active license nahi hai.")
 
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username != ADMIN_USERNAME:
-        await unauthorized_alert(update)
-        return
+    if update.effective_user.username != ADMIN_USERNAME: return
     if not context.args: return
     msg = ' '.join(context.args)
     data = load_data()
@@ -342,9 +321,76 @@ async def user_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("User Not Found")
 
+# --- NEW ADMIN COMMANDS (ADDED AS REQUESTED) ---
+
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.username != ADMIN_USERNAME:
+        await unauthorized_alert(update)
+        return
+    
+    data = load_data()
+    msg = "👥 **Active Users:**\n\n"
+    has_users = False
+    
+    for uid, info in data["users"].items():
+        if isinstance(info, dict): # Crash protection
+            expiry = datetime.fromisoformat(info["expiry"])
+            if datetime.now() < expiry:
+                msg += f"👤 {info['name']} (`{uid}`)\n"
+                has_users = True
+    
+    if not has_users: msg += "No active users."
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def list_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.username != ADMIN_USERNAME:
+        await unauthorized_alert(update)
+        return
+    
+    data = load_data()
+    keys = data.get("keys", {})
+    if not keys:
+        await update.message.reply_text("📭 No Pending Keys.")
+        return
+        
+    msg = "🔑 **Pending Keys:**\n\n"
+    for k, v in keys.items():
+        dur = f"{v}m" if v < 60 else f"{v//60}h" if v < 1440 else f"{v//1440}d"
+        msg += f"`{k}` - {dur}\n"
+        
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def revoke_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.username != ADMIN_USERNAME:
+        await unauthorized_alert(update)
+        return
+    
+    if not context.args:
+        await update.message.reply_text("Usage: `/revoke KEY_CODE`")
+        return
+        
+    key = context.args[0]
+    data = load_data()
+    
+    if key in data["keys"]:
+        del data["keys"][key]
+        save_data(data)
+        await update.message.reply_text(f"🗑️ **Key Revoked:** `{key}`", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("❌ Ye key exist nahi karti.")
+
 async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.username != ADMIN_USERNAME: return
-    await update.message.reply_text("👑 Admin: /gen, /broadcast, /info")
+    msg = (
+        "👑 **GOD MODE**\n"
+        "/gen <time> - Create Key\n"
+        "/users - List Active Users\n"
+        "/keys - List Pending Keys\n"
+        "/revoke <key> - Delete Key\n"
+        "/broadcast <msg> - Msg All\n"
+        "/info <id> - User Info"
+    )
+    await update.message.reply_text(msg)
 
 def main():
     print("🚀 Bot Starting...")
@@ -353,9 +399,15 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("gen", gen_key))
     app.add_handler(CommandHandler("activate", activate))
-    app.add_handler(CommandHandler("end", end_session)) # New Command for Users
+    app.add_handler(CommandHandler("end", end_session))
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CommandHandler("info", user_info))
+    
+    # NEW HANDLERS
+    app.add_handler(CommandHandler("users", list_users))
+    app.add_handler(CommandHandler("keys", list_keys))
+    app.add_handler(CommandHandler("revoke", revoke_key))
+    
     app.add_handler(CommandHandler("admin", admin_help))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
     
