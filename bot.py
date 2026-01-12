@@ -507,8 +507,8 @@ def main():
     print("🚀 Bot Starting...")
     app = ApplicationBuilder().token(TOKEN).build()
     
-    job_queue = app.job_queue
-    job_queue.run_repeating(check_expiry_reminders, interval=300, first=10)
+    #job_queue = app.job_queue
+    #job_queue.run_repeating(check_expiry_reminders, interval=300, first=10)
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("gen", gen_key))
