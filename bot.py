@@ -9,29 +9,53 @@ from telegram.ext import (
 
 # --- CONFIGURATION ---
 TOKEN = "8595752857:AAE-snKxRbSau0OP9rw22p_Jkzus5qu0NC8"
-ADMIN_USERNAME = "Merejigarketukde"
+ADMIN_USERNAME = "Merejigarketukde"  # Apna username bina @ ke
 
 BASE = Path(__file__).parent
 DATA_FILE = BASE / "bot_data.json"
 CLIENT_IMG = BASE / "images/client_seed.jpg"
 SERVER_IMG = BASE / "images/server_seed.jpg"
 
+# --- ZABARDAST DIALOGUES & PUNCHLINES ---
+def get_hype_message():
+    """Har result ke neeche ye random dialogues aayenge"""
+    return random.choice([
+        "🔥 **Abhi aayega na maza bhidu!**",
+        "💣 **Pura Casino hila dalenge aaj!**",
+        "🤑 **Loot lo, mauka haath se na jaye!**",
+        "🚀 **System Hack successful raha boss!**",
+        "💀 **Ye pattern kabhi fail nahi hota!**",
+        "🦅 **Baaz ki nazar rakh, profit pakka hai!**"
+    ])
+
 # --- DATA MANAGEMENT ---
 def load_data():
     if DATA_FILE.exists():
         try: return json.load(open(DATA_FILE, "r"))
-        except: return {"users": {}, "keys": {}, "banned": [], "history": []}
-    return {"users": {}, "keys": {}, "banned": [], "history": []}
+        except: return {"users": {}, "keys": {}, "banned": [], "all_ids": []}
+    return {"users": {}, "keys": {}, "banned": [], "all_ids": []}
 
 def save_data(data):
     with open(DATA_FILE, "w") as f: json.dump(data, f, indent=4)
 
-# --- KEYBOARDS ---
+def add_id_to_db(chat_id):
+    data = load_data()
+    cid = str(chat_id)
+    if "all_ids" not in data: data["all_ids"] = []
+    if cid not in data["all_ids"]:
+        data["all_ids"].append(cid)
+        save_data(data)
+
+# --- KEYBOARDS (ENGLISH BUTTONS - EASIER TO READ) ---
 def main_menu():
-    return ReplyKeyboardMarkup([["🎯 Limbo", "💣 Mines"], ["🎲 Dice", "🔢 Keno"]], resize_keyboard=True)
+    return ReplyKeyboardMarkup([
+        ["🎯 Limbo", "💣 Mines"], 
+        ["🎲 Dice", "🔢 Keno"],
+        ["🐉 Dragon Tower"]
+    ], resize_keyboard=True)
 
 def win_loss_kb():
-    return ReplyKeyboardMarkup([["✅ Win", "❌ Loss"]], resize_keyboard=True)
+    return ReplyKeyboardMarkup([["✅ Win (Jeet Gaya)", "❌ Loss (Lag Gaye)"]], resize_keyboard=True)
 
 def mines_count_kb():
     rows, row = [], []
@@ -55,82 +79,87 @@ def keno_amt_kb():
     return ReplyKeyboardMarkup([["1", "2", "3", "4"], ["5", "6", "7", "8"], ["🔙 Menu"]], resize_keyboard=True)
 
 def keno_risk_kb():
-    return ReplyKeyboardMarkup([["🟢 Low", "🟡 Medium"], ["🔴 High", "🔙 Menu"]], resize_keyboard=True)
+    return ReplyKeyboardMarkup([["🟢 Low Risk", "🟡 Medium Risk"], ["🔴 High Risk", "🔙 Menu"]], resize_keyboard=True)
 
-# --- AUTH & SECURITY ---
-async def check_auth(update: Update):
-    data = load_data()
-    uid = str(update.effective_user.id)
-    
-    if uid in data.get("banned", []):
-        await update.message.reply_text("🚫 **ACCESS DENIED**\nAdmin ne tumhe BAN kar diya hai.")
-        return False
-        
-    if uid not in data["users"]:
-        return False
-        
-    user_info = data["users"][uid]
-    
-    # SAFETY CHECK: Old data format crash fix
-    if isinstance(user_info, str):
-        del data["users"][uid]
-        save_data(data)
-        return False
+def dragon_diff_kb():
+    return ReplyKeyboardMarkup([
+        ["🟢 Easy", "🟡 Medium"],
+        ["🔴 Hard", "🔥 Expert"],
+        ["☠️ Master", "🔙 Menu"]
+    ], resize_keyboard=True)
 
-    expiry = datetime.fromisoformat(user_info["expiry"])
-    if datetime.now() > expiry:
-        await update.message.reply_text("⚠️ **License Expired!**\nRenew: @Merejigarketukde")
-        return False
-        
-    return True
+def dragon_steps_kb():
+    return ReplyKeyboardMarkup([["3 Steps", "5 Steps"], ["8 Steps", "10 Steps"], ["🔙 Menu"]], resize_keyboard=True)
 
-async def unauthorized_alert(update: Update):
-    await update.message.reply_text("⛔ **Admin Only Command!**", parse_mode="Markdown")
-
-# --- ANIMATIONS ---
+# --- KHATARNAK ANIMATIONS ---
 async def show_verified_animation(update, seed_type, user_input):
-    msg = await update.message.reply_text(f"⏳ **Verifying {seed_type}...**", parse_mode="Markdown")
-    await asyncio.sleep(1)
-    await msg.edit_text(f"✅ **{seed_type} Verified!**\nInput: `{user_input}`\nStatus: 🛡️ Authenticated", parse_mode="Markdown")
-    await asyncio.sleep(1)
+    msg = await update.message.reply_text(f"⏳ **{seed_type} Check kar raha hu...**", parse_mode="Markdown")
+    await asyncio.sleep(0.8)
+    await msg.edit_text(f"✅ **{seed_type} Asli Hai!**\nInput: `{user_input}`\nStatus: 🛡️ **Verified Boss!**", parse_mode="Markdown")
+    await asyncio.sleep(0.8)
     await msg.delete()
 
 async def play_hacker_animation(update):
-    msg = await update.message.reply_text("⚡ **Establishing Connection...**", parse_mode="Markdown")
+    msg = await update.message.reply_text("⚡ **Server se Connect kar raha hu...**", parse_mode="Markdown")
     await asyncio.sleep(0.5)
-    await msg.edit_text("👨‍💻 **Decrypting Algorithm...**", parse_mode="Markdown")
+    await msg.edit_text("👨‍💻 **Algorithm Tod raha hu...**", parse_mode="Markdown")
     await asyncio.sleep(0.5)
-    await msg.edit_text("🔓 **PATTERN FOUND!**", parse_mode="Markdown")
+    await msg.edit_text("🔍 **History Check kar raha hu...**", parse_mode="Markdown")
+    await asyncio.sleep(0.5)
+    await msg.edit_text("🔓 **JACKPOT PATTERN MIL GAYA!**", parse_mode="Markdown")
     await asyncio.sleep(0.5)
     await msg.delete()
 
-# --- GAME LOGIC (UNCHANGED) ---
+# --- GAME LOGIC ---
+
+# 1. Limbo
 async def get_limbo_res(update, context):
     await play_hacker_animation(update)
     target = random.choices([1.5, 2.0, 3.0, 10.0], [40, 30, 20, 10])[0]
     roll = target + round(random.uniform(0.1, 15.0), 2)
-    msg = (f"🎯 **LIMBO PREDICTION**\n\n🎯 Target: `{target}x`\n🚀 Roll: `{roll}x`\n👉 **Bet on {target}x or lower**")
+    
+    msg = (f"🎯 **LIMBO KA JAADU**\n\n"
+           f"🎯 Target: `{target}x`\n"
+           f"🚀 Roll Aayega: `{roll}x`\n"
+           f"👉 **Chup chap {target}x par laga de!**\n\n"
+           f"{get_hype_message()}")
+           
     context.user_data["last_func"] = "limbo"
     await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
+# 2. Dice
 async def get_dice_res(update, context):
     await play_hacker_animation(update)
     roll = random.randint(40, 98)
     condition = "Over 40" if roll > 40 else "Under 40"
-    msg = (f"🎲 **DICE PREDICTION**\n\n🎰 Prediction: **{condition}**\n🎲 Expected Roll: `{roll}`\n⚡ Drag slider to secure zone.")
+    
+    msg = (f"🎲 **DICE HACKING**\n\n"
+           f"🎰 Prediction: **{condition}**\n"
+           f"🎲 Expected Number: `{roll}`\n"
+           f"⚡ Slider set kar aur paisa bana!\n\n"
+           f"{get_hype_message()}")
+           
     context.user_data["last_func"] = "dice"
     await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
+# 3. Keno
 async def get_keno_res(update, context):
     await play_hacker_animation(update)
     amt = context.user_data.get("keno_amt", 4)
     risk = context.user_data.get("keno_risk", "High")
     nums = random.sample(range(1, 41), amt)
     nums.sort()
-    msg = (f"🔢 **KENO PREDICTION**\n\n🔮 Numbers: `{', '.join(map(str, nums))}`\n🔥 Risk: {risk}\n\nPlay these numbers.")
+    
+    msg = (f"🔢 **KENO LEAKED NUMBERS**\n\n"
+           f"🔮 Numbers: `{', '.join(map(str, nums))}`\n"
+           f"🔥 Risk Level: {risk}\n"
+           f"Bina dare ye number laga de!\n\n"
+           f"{get_hype_message()}")
+           
     context.user_data["last_func"] = "keno"
     await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
+# 4. Mines
 async def get_mines_res(update, context):
     await play_hacker_animation(update)
     mines = context.user_data.get("mines", 3)
@@ -140,58 +169,177 @@ async def get_mines_res(update, context):
     for c in cells: grid[c] = "⭐"
     board_str = ""
     for i in range(0, 25, 5): board_str += "  ".join(grid[i:i+5]) + "\n"
-    msg = (f"💣 **MINES PREDICTION**\n💣 Mines: `{mines}` | 💎 Open: `{opens}`\n\n{board_str}")
+    
+    msg = (f"💣 **MINES KA BAAP**\n"
+           f"💣 Mines: `{mines}` | 💎 Open: `{opens}`\n\n"
+           f"{board_str}\n\n"
+           f"{get_hype_message()}")
+           
     context.user_data["last_func"] = "mines"
     await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
-# --- HANDLERS (FLOW) ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await check_auth(update):
-        await update.message.reply_text("👑 **Welcome Boss! Ready to earn?**", reply_markup=main_menu(), parse_mode="Markdown")
-    else:
-        await update.message.reply_text("🔒 **LOCKED**\n\nAccess lene ke liye Key kharidein.\nAdmin: @Merejigarketukde\n\nUse: `/activate KEY`", parse_mode="Markdown")
+# 5. Dragon Tower
+async def get_dragon_res(update, context):
+    await play_hacker_animation(update)
+    diff = context.user_data.get("dragon_diff", "Easy")
+    steps_txt = context.user_data.get("dragon_steps", "5 Steps")
+    
+    cols = 4
+    if "Easy" in diff: cols = 4
+    elif "Medium" in diff: cols = 3
+    elif "Hard" in diff: cols = 2
+    elif "Expert" in diff: cols = 3
+    elif "Master" in diff: cols = 4
+    
+    steps = int(steps_txt.split()[0])
+    board = ""
+    for i in range(steps):
+        row = ["💣"] * cols
+        safe_idx = random.randint(0, cols-1)
+        row[safe_idx] = "🥚"
+        board = " ".join(row) + "\n" + board
+        
+    msg = (f"🐉 **DRAGON TOWER HACK**\n"
+           f"🔥 Mode: {diff}\n"
+           f"👣 Steps: {steps}\n\n"
+           f"{board}\n"
+           f"👉 **Sirf Ande (Egg) pe kudna!**\n\n"
+           f"{get_hype_message()}")
+           
+    context.user_data["last_func"] = "dragon"
+    await update.message.reply_text(msg, reply_markup=win_loss_kb(), parse_mode="Markdown")
 
+
+# --- REMINDER SYSTEM (Background Task) ---
+async def check_expiry_reminders(context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    now = datetime.now()
+    users_to_save = False
+    
+    for uid, info in data["users"].items():
+        if isinstance(info, dict):
+            try:
+                expiry = datetime.fromisoformat(info["expiry"])
+                time_left = expiry - now
+                
+                # 1 Day Reminder
+                if timedelta(hours=23) < time_left < timedelta(hours=24):
+                    if not info.get("reminded_24h"):
+                        try:
+                            await context.bot.send_message(uid, "⚠️ **WARNING BOSS:**\nSirf 24 Ghante bache hain! License renew kar lo warna service band ho jayegi.")
+                            info["reminded_24h"] = True
+                            users_to_save = True
+                        except: pass
+
+                # 1 Hour Reminder
+                elif timedelta(minutes=55) < time_left < timedelta(minutes=65):
+                    if not info.get("reminded_1h"):
+                        try:
+                            await context.bot.send_message(uid, "🚨 **KHATRA:**\nSirf 1 Ghanta bacha hai! Jaldi Admin se baat karo: @Merejigarketukde")
+                            info["reminded_1h"] = True
+                            users_to_save = True
+                        except: pass
+                        
+            except: pass
+            
+    if users_to_save:
+        save_data(data)
+
+# --- AUTH & START ---
+async def check_auth(update: Update):
+    data = load_data()
+    uid = str(update.effective_user.id)
+    
+    if uid in data.get("banned", []):
+        await update.message.reply_text("🚫 **TERE KO BAN KAR DIYA HAI!**\nAdmin se baat kar.")
+        return False
+        
+    if uid not in data["users"]: return False
+    
+    info = data["users"][uid]
+    if isinstance(info, str): return False
+    
+    if datetime.now() > datetime.fromisoformat(info["expiry"]):
+        await update.message.reply_text("⚠️ **KEY EXPIRE HO GAYI!**\nNaya maal kharido: @Merejigarketukde")
+        return False
+    return True
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    add_id_to_db(user.id)
+    
+    if await check_auth(update):
+        await update.message.reply_text(f"👑 **Aaja Boss {user.first_name}!**\nSystem set hai, lootna shuru karein?", reply_markup=main_menu(), parse_mode="Markdown")
+    else:
+        # PRICING POPUP (Roman Hindi)
+        msg = (
+            "🔥 **Aswad Godfather VIP** 🔥\n"
+            "💎 **100% Confirm Hacking Tool**\n\n"
+            "Ye free ka maal nahi hai, Paisa lagta hai quality ka!\n\n"
+            "🕐 **1 Hour** – ₹19 (Trial)\n"
+            "📅 **7 Days** – ₹139 (Best)\n"
+            "📆 **1 Month** – ₹339 (Pro)\n\n"
+            "💳 **Key Kharido:** @Merejigarketukde\n"
+            "🔑 **Activate Kaise Karein:** `/activate KEY`"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
+
+# --- TEXT HANDLER ---
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    add_id_to_db(update.effective_user.id)
+    
     if not await check_auth(update):
-        await update.message.reply_text("🔒 **Access Denied**\nKey Activate karein: `/activate KEY`", parse_mode="Markdown")
+        await start(update, context)
         return
 
     text = update.message.text
     ud = context.user_data
 
+    # Back Button
     if text == "🔙 Menu":
         ud.clear()
         await update.message.reply_text("🏠 **Main Menu**", reply_markup=main_menu(), parse_mode="Markdown")
         return
 
-    if text in ["🎯 Limbo", "💣 Mines", "🎲 Dice", "🔢 Keno"]:
+    # Game Select
+    if text in ["🎯 Limbo", "💣 Mines", "🎲 Dice", "🔢 Keno", "🐉 Dragon Tower"]:
         ud.clear()
         ud["game"] = text
+        caption_txt = "📌 **Active Client Seed Bhejo**\n(Game settings se copy karke yahan paste kar)"
+        
         if CLIENT_IMG.exists():
-            await update.message.reply_photo(CLIENT_IMG, caption="📌 **Send Active Client Seed**", parse_mode="Markdown")
+            await update.message.reply_photo(CLIENT_IMG, caption=caption_txt, parse_mode="Markdown")
         else:
-            await update.message.reply_text("📌 **Send Active Client Seed**", parse_mode="Markdown")
+            await update.message.reply_text(caption_txt, parse_mode="Markdown")
         ud["step"] = "wait_client"
         return
 
+    # Client Seed Input
     if ud.get("step") == "wait_client":
         await show_verified_animation(update, "Client Seed", text)
+        caption_txt = "📌 **Ab Server Seed Bhejo**\n(Ye wala hidden hota hai, reveal karke bhejo)"
+        
         if SERVER_IMG.exists():
-            await update.message.reply_photo(SERVER_IMG, caption="📌 **Send Active Server Seed**", parse_mode="Markdown")
+            await update.message.reply_photo(SERVER_IMG, caption=caption_txt, parse_mode="Markdown")
         else:
-            await update.message.reply_text("📌 **Send Active Server Seed**", parse_mode="Markdown")
+            await update.message.reply_text(caption_txt, parse_mode="Markdown")
         ud["step"] = "wait_server"
         return
 
+    # Server Seed Input
     if ud.get("step") == "wait_server":
         await show_verified_animation(update, "Server Seed", text)
         game = ud.get("game")
+        
         if game == "💣 Mines":
-            await update.message.reply_text("💣 **How many Mines?**\nSelect 1-24:", reply_markup=mines_count_kb(), parse_mode="Markdown")
+            await update.message.reply_text("💣 **Kitne Mines Select Kiye Hain?**", reply_markup=mines_count_kb())
             ud["step"] = "wait_mines_cnt"
         elif game == "🔢 Keno":
-            await update.message.reply_text("🔢 **How many numbers?**", reply_markup=keno_amt_kb(), parse_mode="Markdown")
+            await update.message.reply_text("🔢 **Kitne Numbers Khelne Hain?**", reply_markup=keno_amt_kb())
             ud["step"] = "wait_keno_amt"
+        elif game == "🐉 Dragon Tower":
+            await update.message.reply_text("🐉 **Difficulty Kya Hai?**", reply_markup=dragon_diff_kb())
+            ud["step"] = "wait_dragon_diff"
         elif game == "🎯 Limbo":
             await get_limbo_res(update, context)
             ud["step"] = "result"
@@ -200,12 +348,11 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ud["step"] = "result"
         return
 
+    # --- GAME CONFIGS ---
     if ud.get("step") == "wait_mines_cnt":
-        if not text.isdigit() or not (1 <= int(text) <= 24):
-            await update.message.reply_text("⚠️ Select 1-24")
-            return
+        if not text.isdigit() or not (1 <= int(text) <= 24): return
         ud["mines"] = int(text)
-        await update.message.reply_text("💎 **How many tiles to open?**", reply_markup=open_count_kb(), parse_mode="Markdown")
+        await update.message.reply_text("💎 **Kitne dabbe (Tiles) kholne hain?**", reply_markup=open_count_kb())
         ud["step"] = "wait_open_cnt"
         return
 
@@ -219,7 +366,7 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ud.get("step") == "wait_keno_amt":
         if not text.isdigit(): return
         ud["keno_amt"] = int(text)
-        await update.message.reply_text("⚠ **Select Risk Level**", reply_markup=keno_risk_kb(), parse_mode="Markdown")
+        await update.message.reply_text("⚠ **Risk Kitna Lena Hai?**", reply_markup=keno_risk_kb())
         ud["step"] = "wait_keno_risk"
         return
 
@@ -229,189 +376,153 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ud["step"] = "result"
         return
 
+    if ud.get("step") == "wait_dragon_diff":
+        ud["dragon_diff"] = text
+        await update.message.reply_text("👣 **Kitne Steps upar jana hai?**", reply_markup=dragon_steps_kb())
+        ud["step"] = "wait_dragon_steps"
+        return
+
+    if ud.get("step") == "wait_dragon_steps":
+        ud["dragon_steps"] = text
+        await get_dragon_res(update, context)
+        ud["step"] = "result"
+        return
+
+    # --- RESULT LOOP ---
     if ud.get("step") == "result":
-        if text == "❌ Loss":
-            await update.message.reply_text("🔄 **Re-Analyzing...**", parse_mode="Markdown")
+        if "Loss" in text:
+            await update.message.reply_text("🔄 **Ruk! Dobara Analyze kar raha hu...**", parse_mode="Markdown")
+            # Loop back to same function
             func = ud.get("last_func")
             if func == "limbo": await get_limbo_res(update, context)
             elif func == "dice": await get_dice_res(update, context)
             elif func == "keno": await get_keno_res(update, context)
             elif func == "mines": await get_mines_res(update, context)
-        elif text == "✅ Win":
+            elif func == "dragon": await get_dragon_res(update, context)
+            
+        elif "Win" in text:
             ud.clear()
-            await update.message.reply_text("🎉 **Profit!** Back to Menu.", reply_markup=main_menu(), parse_mode="Markdown")
+            await update.message.reply_text("🎉 **Paisa hi Paisa!** Chal ab menu pe wapas.", reply_markup=main_menu(), parse_mode="Markdown")
         return
 
 # --- ADMIN COMMANDS ---
+async def unauthorized_alert(update):
+    await update.message.reply_text("⛔ **Teri Aukaat Nahi Hai Ye Command Chalane Ki!**")
 
 async def gen_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username != ADMIN_USERNAME:
+    if update.effective_user.username != ADMIN_USERNAME: 
         await unauthorized_alert(update)
         return
-
     if not context.args:
-        await update.message.reply_text("Usage: `/gen 30m`, `/gen 2h`, `/gen 1d`", parse_mode="Markdown")
+        await update.message.reply_text("Aise likh: /gen 1h, /gen 1d, /gen 7d")
         return
-
-    duration_str = context.args[0].lower()
-    minutes = 0
-    if duration_str.endswith('m'): minutes = int(duration_str[:-1])
-    elif duration_str.endswith('h'): minutes = int(duration_str[:-1]) * 60
-    elif duration_str.endswith('d'): minutes = int(duration_str[:-1]) * 1440
-    else: minutes = int(duration_str) * 1440
-
+    
+    s = context.args[0].lower()
+    m = 0
+    if s.endswith('m'): m = int(s[:-1])
+    elif s.endswith('h'): m = int(s[:-1])*60
+    elif s.endswith('d'): m = int(s[:-1])*1440
+    
     key = "KEY-" + str(uuid.uuid4())[:8].upper()
     data = load_data()
-    data["keys"][key] = minutes
+    data["keys"][key] = m
     save_data(data)
-
-    dur_txt = f"{minutes}m" if minutes<60 else f"{minutes//60}h" if minutes<1440 else f"{minutes//1440}d"
-    await update.message.reply_text(f"💎 **Key Generated**\n🔑 `{key}`\n⏳ {dur_txt}", parse_mode="Markdown")
+    await update.message.reply_text(f"💎 **Key Ban Gayi Boss!**\n🔑 `{key}`\n⏳ Duration: {s}", parse_mode="Markdown")
 
 async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args: return
     key = context.args[0].strip()
     data = load_data()
     uid = str(update.effective_user.id)
-    name = update.effective_user.first_name
-
+    
     if key in data["keys"]:
-        mins = data["keys"][key]
-        expiry = datetime.now() + timedelta(minutes=mins)
+        m = data["keys"][key]
+        exp = datetime.now() + timedelta(minutes=m)
         data["users"][uid] = {
-            "expiry": expiry.isoformat(),
-            "name": name,
-            "joined": datetime.now().isoformat()
+            "expiry": exp.isoformat(),
+            "name": update.effective_user.first_name,
+            "reminded_24h": False,
+            "reminded_1h": False
         }
         del data["keys"][key]
         save_data(data)
-        await update.message.reply_text(f"✅ **Activated ({mins}m)!**\nWelcome {name}", reply_markup=main_menu())
+        await update.message.reply_text("✅ **Mubarak Ho! Key Activate Ho Gayi!**", reply_markup=main_menu())
     else:
-        await update.message.reply_text("❌ Invalid Key")
-
-async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    uid = str(update.effective_user.id)
-    if uid in data["users"]:
-        del data["users"][uid]
-        save_data(data)
-        await update.message.reply_text("🛑 **Session Ended.**", reply_markup=ReplyKeyboardRemove())
-    else:
-        await update.message.reply_text("Aapke paas koi active license nahi hai.")
+        await update.message.reply_text("❌ **Galat Key Hai!** Sahi wali daal.")
 
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.username != ADMIN_USERNAME: return
     if not context.args: return
     msg = ' '.join(context.args)
     data = load_data()
-    for uid in data["users"]:
-        try: await context.bot.send_message(chat_id=uid, text=f"📢 {msg}", parse_mode="Markdown")
+    ids = data.get("all_ids", []) + list(data["users"].keys())
+    ids = list(set(ids))
+    
+    sent = 0
+    await update.message.reply_text(f"📣 {len(ids)} logo ko message bhej raha hu...")
+    for uid in ids:
+        try:
+            await context.bot.send_message(uid, f"📢 **ANNOUNCEMENT**\n\n{msg}", parse_mode="Markdown")
+            sent += 1
         except: pass
-    await update.message.reply_text("✅ Broadcast Sent!")
+    await update.message.reply_text(f"✅ {sent} logo ko message chala gaya.")
 
-async def user_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username != ADMIN_USERNAME: return
-    if not context.args: return
-    uid = context.args[0]
-    data = load_data()
-    if uid in data["users"]:
-        u = data["users"][uid]
-        exp = datetime.fromisoformat(u["expiry"]).strftime("%d-%b %H:%M")
-        await update.message.reply_text(f"👤 Name: {u['name']}\n⏳ Expiry: {exp}")
-    else:
-        await update.message.reply_text("User Not Found")
-
-# --- NEW ADMIN COMMANDS (ADDED AS REQUESTED) ---
-
-async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def admin_utils(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.username != ADMIN_USERNAME:
         await unauthorized_alert(update)
         return
     
-    data = load_data()
-    msg = "👥 **Active Users:**\n\n"
-    has_users = False
-    
-    for uid, info in data["users"].items():
-        if isinstance(info, dict): # Crash protection
-            expiry = datetime.fromisoformat(info["expiry"])
-            if datetime.now() < expiry:
-                msg += f"👤 {info['name']} (`{uid}`)\n"
-                has_users = True
-    
-    if not has_users: msg += "No active users."
-    await update.message.reply_text(msg, parse_mode="Markdown")
-
-async def list_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username != ADMIN_USERNAME:
-        await unauthorized_alert(update)
-        return
-    
-    data = load_data()
-    keys = data.get("keys", {})
-    if not keys:
-        await update.message.reply_text("📭 No Pending Keys.")
-        return
-        
-    msg = "🔑 **Pending Keys:**\n\n"
-    for k, v in keys.items():
-        dur = f"{v}m" if v < 60 else f"{v//60}h" if v < 1440 else f"{v//1440}d"
-        msg += f"`{k}` - {dur}\n"
-        
-    await update.message.reply_text(msg, parse_mode="Markdown")
-
-async def revoke_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.username != ADMIN_USERNAME:
-        await unauthorized_alert(update)
-        return
-    
-    if not context.args:
-        await update.message.reply_text("Usage: `/revoke KEY_CODE`")
-        return
-        
-    key = context.args[0]
+    cmd = update.message.text.split()[0]
     data = load_data()
     
-    if key in data["keys"]:
-        del data["keys"][key]
-        save_data(data)
-        await update.message.reply_text(f"🗑️ **Key Revoked:** `{key}`", parse_mode="Markdown")
-    else:
-        await update.message.reply_text("❌ Ye key exist nahi karti.")
+    if cmd == "/users":
+        msg = "👥 **Active Users:**\n"
+        for uid, info in data["users"].items():
+            if isinstance(info, dict) and datetime.now() < datetime.fromisoformat(info["expiry"]):
+                msg += f"{info['name']} (`{uid}`)\n"
+        await update.message.reply_text(msg, parse_mode="Markdown")
+        
+    elif cmd == "/keys":
+        msg = "🔑 **Pending Keys:**\n" + "\n".join([f"`{k}` ({v}m)" for k,v in data["keys"].items()])
+        await update.message.reply_text(msg, parse_mode="Markdown")
+        
+    elif cmd == "/revoke":
+        if context.args:
+            k = context.args[0]
+            if k in data["keys"]:
+                del data["keys"][k]
+                save_data(data)
+                await update.message.reply_text("🗑️ Key Delete kar di.")
+                
+    elif cmd == "/info":
+        if context.args and context.args[0] in data["users"]:
+            u = data["users"][context.args[0]]
+            await update.message.reply_text(str(u))
 
 async def admin_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.username != ADMIN_USERNAME: return
-    msg = (
-        "👑 **GOD MODE**\n"
-        "/gen <time> - Create Key\n"
-        "/users - List Active Users\n"
-        "/keys - List Pending Keys\n"
-        "/revoke <key> - Delete Key\n"
-        "/broadcast <msg> - Msg All\n"
-        "/info <id> - User Info"
-    )
-    await update.message.reply_text(msg)
+    await update.message.reply_text("👑 /gen, /users, /keys, /revoke, /broadcast, /info")
 
 def main():
     print("🚀 Bot Starting...")
     app = ApplicationBuilder().token(TOKEN).build()
     
+    job_queue = app.job_queue
+    job_queue.run_repeating(check_expiry_reminders, interval=300, first=10)
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("gen", gen_key))
     app.add_handler(CommandHandler("activate", activate))
-    app.add_handler(CommandHandler("end", end_session))
     app.add_handler(CommandHandler("broadcast", broadcast))
-    app.add_handler(CommandHandler("info", user_info))
     
-    # NEW HANDLERS
-    app.add_handler(CommandHandler("users", list_users))
-    app.add_handler(CommandHandler("keys", list_keys))
-    app.add_handler(CommandHandler("revoke", revoke_key))
-    
+    app.add_handler(CommandHandler("users", admin_utils))
+    app.add_handler(CommandHandler("keys", admin_utils))
+    app.add_handler(CommandHandler("revoke", admin_utils))
+    app.add_handler(CommandHandler("info", admin_utils))
     app.add_handler(CommandHandler("admin", admin_help))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
     
-    app.run_polling()
+    app.add_handler(MessageHandl er(filters.TEXT & ~filters.COMMAND, text_handler))
 
-if __name__ == "__main__":
-    main()
+app.run_polling()
+
+if_name_ == "_main_": main()
