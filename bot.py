@@ -521,7 +521,7 @@ def main():
     app.add_handler(CommandHandler("info", admin_utils))
     app.add_handler(CommandHandler("admin", admin_help))
     
-    app.add_handler(MessageHandl er(filters.TEXT & ~filters.COMMAND, text_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
 app.run_polling()
 
