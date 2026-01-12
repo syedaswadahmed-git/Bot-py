@@ -525,4 +525,5 @@ def main():
 
 app.run_polling()
 
-if_name_ == "_main_": main()
+if__name__ == "__main__": 
+main()
