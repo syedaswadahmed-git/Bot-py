@@ -522,8 +522,8 @@ def main():
     app.add_handler(CommandHandler("admin", admin_help))
     
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    
+    app.run_polling()
 
-app.run_polling()
-
-if__name__ == "__main__": 
-main()
+if __name__ == "__main__":
+    main()
