@@ -8,7 +8,7 @@ from telegram.ext import (
 )
 
 # --- CONFIGURATION ---
-TOKEN = "8595752857:AAE-snKxRbSau0OP9rw22p_Jkzus5qu0NC8"
+TOKEN = "8492335854:AAGpcw4TSwUkpL-jASnRe8MIBZhN_iR68pg"
 ADMIN_USERNAME = "Merejigarketukde"  # Apna username bina @ ke
 
 BASE = Path(__file__).parent
@@ -276,7 +276,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔥 **Aswad Godfather VIP** 🔥\n"
             "💎 **100% Confirm Hacking Tool**\n\n"
             "Ye free ka maal nahi hai, Paisa lagta hai quality ka!\n\n"
-            "🕐 **1 Hour** – ₹19 (Trial)\n"
+            "🕐 **1 Hour** – ₹39 (Trial)\n"
             "📅 **7 Days** – ₹139 (Best)\n"
             "📆 **1 Month** – ₹339 (Pro)\n\n"
             "💳 **Key Kharido:** @Merejigarketukde\n"
